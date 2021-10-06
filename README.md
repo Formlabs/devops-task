@@ -1,7 +1,8 @@
 # Formlabs DevOps home assignment
 
-This repository contains a home assignment for DevOps applicants for Formlabs.
-See all open jobs: https://careers.formlabs.com/
+This repository contains a home assignment code for DevOps applicants for Formlabs.
+
+See all open jobs at https://careers.formlabs.com/
 
 
 ## Task
@@ -16,4 +17,7 @@ See all open jobs: https://careers.formlabs.com/
     - Feel free to switch up technologies. For example you can use an Ansible playbook or a Jenkins pipeline.
 4. Send us the fork where you did your work.
 
+### Notes
+
 - Explain as much as possible in the commit message(s) and/or comments if needed. See more on commit messages [here](https://chris.beams.io/posts/git-commit/).
+- It would be great if you'd also write about why you choose a certain technology if there are alternatives to consider.
