@@ -13,6 +13,7 @@ jobs:
       -
         name: Create Kubernetes manifests
         uses: Azure/k8s-bake@v2.2
+        id: bake
         with:
           renderEngine: "helm"
           helmChart: "./helloapp-chart/"
