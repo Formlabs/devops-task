@@ -48,7 +48,7 @@ jobs:
           push: true
           tags: abu33/helloapp:dev-${{ github.sha }}
       -
-        name: Scan image
+        name: Scan image for vulnerabilities
         uses: Azure/container-scan@v0
         with:
           image-name: abu33/helloapp:dev-${{ github.sha }}
