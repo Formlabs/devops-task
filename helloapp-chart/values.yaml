@@ -1,0 +1,31 @@
+image:
+  repository: abu33/helloapp
+  pullPolicy: Always
+  tag: "latest"
+serviceAccountName: "helloapp-serviceaccount"
+podSecurityContext:
+  runAsNonRoot: true
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  allowPrivilegeEscalation: false
+  runAsUser: 2000
+service:
+  type: ClusterIP
+  port: 1080
+  targetPort: 8080
+replicaCount: 1
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+labels:
+  environment: production
+  app: helloapp
+selectorLabels:
+  environment: production
+  app: helloapp
