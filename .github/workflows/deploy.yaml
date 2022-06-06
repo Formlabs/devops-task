@@ -1,12 +1,28 @@
 name: deploy
 on:
-  workflow_call:
+  push:
+    branches:
+      - master
 jobs:
   deploy:
     runs-on: ubuntu-20.04
     steps:
       -
         uses: actions/checkout@v3
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Mark image as stable
+        uses: akhilerm/tag-push-action@v2.0.0
+        with:
+          src: abu33/helloapp:dev-${{ github.sha }}
+          dst: |
+            abu33/helloapp:latest
+            abu33/helloapp:stable-1.0-${{ github.sha }}
       -
         name: Start minikube
         uses: medyagh/setup-minikube@master
