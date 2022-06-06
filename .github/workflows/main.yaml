@@ -1,0 +1,11 @@
+name: build-deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    uses: ABu33/devops-task/.github/workflows/build.yaml@master
+    secrets: inherit

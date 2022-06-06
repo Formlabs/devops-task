@@ -1,8 +1,6 @@
-name: CI
+name: build
 on:
-  push:
-    branches: [ master ]
-  workflow_dispatch:
+  workflow_call:
 jobs:
   build:
     runs-on: ubuntu-20.04
