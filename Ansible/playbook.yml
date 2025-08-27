@@ -1,0 +1,10 @@
+- name: Apply Kubernetes manifests using kubectl
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Apply Deployment YAML
+      command: kubectl apply -f ../deployment.yml --kubeconfig=/etc/rancher/k3s/k3s.yaml
+
+    - name: Apply Service YAML
+      command: kubectl apply -f ../service.yml --kubeconfig=/etc/rancher/k3s/k3s.yaml
+

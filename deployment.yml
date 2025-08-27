@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloapp-deployment
+spec:
+  replicas: 2     # Number of app pods to run
+  selector:
+    matchLabels:
+      app: helloapp
+  template:
+    metadata:
+      labels:
+        app: helloapp  # Pods will get this label for selector matching
+    spec:
+      containers:
+        - name: helloapp
+          image: heisenberg1420/devops:daff7b21c04b449ae87bc9f2b4ef6952e5b0ccc9
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: regcred

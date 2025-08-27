@@ -1,23 +1,16 @@
-# Formlabs DevOps home assignment
+Technology choices and possible alternatives:
 
-This repository contains a home assignment code for DevOps applicants for Formlabs.
+- **Docker**: I  used it because it allows me to package the application and all its dependencies into a portable image, ensuring it runs consistently across any environment.
 
-See all open jobs at https://careers.formlabs.com/
+Alternatives: Podman and Buildah offer similar functionality and can even be lighter since they do not require a running daemon. However, Docker remains the industry standard and is widely supported by CI/CD tools and cloud providers.
 
+- **k3s**: I used k3s as my Kubernetes distribution because it’s a lightweight alternative to Minikube. It provides a full Kubernetes API while consuming fewer resources and booting up much faster, which is ideal for local development and fast CI testing.
 
-## Task
+- **Ansible**: Ansible is used to automate deployment and infrastructure tasks in a simple way where it's human-readable and idempotent also worth to note that it's Agentless (Doesn't require extra software) and works really well with both Docker and Kubernetes. 
 
-0. Fork this repo.
-1. Create a deployable docker image for the application.
-    - Feel free to switch up technologies. For example you can use `buildah` instead of Docker.
-2. Create a Kubernetes deployment and service for the application.
-    - Just aim for the simplest setup, no ingress deployment is needed. Feel free to use Helm.
-    - You can use [Minikube](https://minikube.sigs.k8s.io/docs/start/) or [k3s](https://k3s.io/) or any other Kubernetes distribution you are familiar with.
-3. Create automation to build, test and deploy the application when a change happens in git.
-    - Feel free to switch up technologies. For example you can use an Ansible playbook or a Jenkins pipeline.
-4. Send us the fork where you did your work.
+Alternatives: Chef and Puppet but they use Ruby for (Chef) and DSLs for (Puppet) which is harder to read and write than Ansible.
 
-### Notes
+- **GitHub Actions**: I used it since it integrates directly with the repository that i have on Github and doesn't need to install or configure external CI/CD servers. Since Actions trigger automatically on Push events.
 
-- Explain as much as possible in the commit message(s) and/or comments if needed. See more on commit messages [here](https://chris.beams.io/posts/git-commit/).
-- It would be great if you'd also write about why you choose a certain technology if there are alternatives to consider.
+Alternatives: Jenkins and GitLab CI; I haven't used Jenkins since it requires maintaining my own Jenkins server, plugins and agents. 
+As for GitLab CI, it's relaly strong especially for GitLab hosted projects, but I didn't need to use it here since my repo is available on GitHub.

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloapp
+spec:
+  type: NodePort     # Exposes service on each Node's IP at a static port
+  selector:
+    app: helloapp    # It will select this label to route traffic to pods
+  ports:
+    - protocol: TCP
+      port: 8081         # Port to access service inside the cluster 
+      targetPort: 8080   # Port on which your pod's container listens
+
