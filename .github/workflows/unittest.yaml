@@ -1,0 +1,13 @@
+# This workflow is used to run unit tests when a new pull request is created for test and prod branches
+name: unittest
+on:
+  pull_request:
+    branches: [ "test", "prod" ]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: test
+      run: ./test.sh
