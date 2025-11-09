@@ -13,4 +13,3 @@ def local(ctx):
 def docker(ctx):
     """Run the latest built Docker container."""
     ctx.run("podman run -p 8080:8080 helloapp:latest")
-
