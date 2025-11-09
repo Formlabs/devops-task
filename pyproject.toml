@@ -1,0 +1,59 @@
+[project]
+name = "helloapp"
+version = "0.1.0"
+description = "Formlabs DevOps home assignment - Hello World Flask application"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.1.2",
+    "gunicorn>=23.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "invoke>=2.2.1",
+    "pytest>=9.0.0",
+    "ruff>=0.14.4",
+    "pyrefly>=0.40.1",
+    "bandit>=1.8.6",
+    "python-dotenv>=1.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-v"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "S",      # bandit security checks
+]
+ignore = [
+    "S101",   # use of assert
+]
+
+[tool.pyrefly]
+project-includes = ["helloapp", "tests"]
+python-version = "3.13"
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+
