@@ -29,16 +29,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: ci
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Buildah Action
         uses: redhat-actions/buildah-build@v2
         with:
           image: helloapp
-          tags: latest ${{ github.sha }}
+          tags: ghcr.io/${{ github.repository }}/helloapp:${{ github.sha }}
           containerfiles: |
             ./Containerfile
+
+      - name: Push to GitHub Container Registry
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          tags: ghcr.io/${{ github.repository }}/helloapp:${{ github.sha }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
