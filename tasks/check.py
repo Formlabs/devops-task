@@ -27,3 +27,9 @@ def type_check(ctx):
 def security(ctx):
     """Run bandit security checks."""
     ctx.run("uv run bandit -r helloapp/")
+
+
+@task
+def helm_lint(ctx):
+    """Run helm lint on the chart."""
+    ctx.run("helm lint chart")

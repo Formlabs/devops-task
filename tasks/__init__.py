@@ -15,14 +15,15 @@ ns.add_collection(Collection.from_module(test))
 
 @task
 def ci(ctx):
-    """Run all CI checks (lint, type-check, security, test)."""
-    from .check import lint, security, type_check
+    """Run all CI checks (lint, type-check, security, test, helm-lint)."""
+    from .check import lint, security, type_check, helm_lint
     from .test import test
 
     lint(ctx)
     type_check(ctx)
     security(ctx)
     test(ctx)
+    helm_lint(ctx)
 
 
 ns.add_task(ci)
