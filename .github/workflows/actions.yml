@@ -62,11 +62,25 @@ jobs:
     permissions:
       contents: read
       packages: write
-    if: github.event_name == 'push' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Determine tags
+        id: tags
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tags=${{ env.IMAGE_REPOSITORY }}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "tags<<EOF" >> $GITHUB_OUTPUT
+            echo "${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "${{ env.IMAGE_REPOSITORY }}:latest" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "tags=${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -79,52 +93,14 @@ jobs:
         uses: redhat-actions/buildah-build@v2
         with:
           image: ${{ env.IMAGE_NAME }}
-          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
+          tags: ${{ steps.tags.outputs.tags }}
           containerfiles: |
             ${{ env.CONTAINERFILE_PATH }}
 
       - name: Push to GitHub Container Registry
         uses: redhat-actions/push-to-registry@v2
         with:
-          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-
-  build-and-publish-main:
-    runs-on: ubuntu-latest
-    needs: ci
-    permissions:
-      contents: read
-      packages: write
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-
-      - name: Build and push container image (main branch)
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: ${{ env.IMAGE_NAME }}
-          tags: |
-            ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
-            ${{ env.IMAGE_REPOSITORY }}:latest
-          containerfiles: |
-            ${{ env.CONTAINERFILE_PATH }}
-
-      - name: Push to GitHub Container Registry (main branch)
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          tags: |
-            ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
-            ${{ env.IMAGE_REPOSITORY }}:latest
+          tags: ${{ steps.tags.outputs.tags }}
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
@@ -149,6 +125,10 @@ jobs:
       - name: Setup Kubernetes
         uses: azure/setup-kubectl@v3
 
+      - name: Set Kubernetes context
+        run: |
+          kubectl config use-context ${{ env.DEV1_K8S_CONTEXT }}
+
       - name: Deploy to dev1
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
@@ -159,7 +139,7 @@ jobs:
 
   deploy-qa:
     runs-on: ubuntu-latest
-    needs: build-and-publish-main
+    needs: build-and-publish
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
@@ -178,6 +158,10 @@ jobs:
       - name: Setup Kubernetes
         uses: azure/setup-kubectl@v3
 
+      - name: Set Kubernetes context
+        run: |
+          kubectl config use-context ${{ env.QA_K8S_CONTEXT }}
+
       - name: Deploy to QA
         run: |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
@@ -186,43 +170,9 @@ jobs:
             --namespace ${{ env.QA_NAMESPACE }} \
             --create-namespace
 
-  build-and-publish-tags:
-    runs-on: ubuntu-latest
-    needs: ci
-    permissions:
-      contents: read
-      packages: write
-    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-
-      - name: Build and push container image
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.ref_name }}
-          containerfiles: |
-            ${{ env.CONTAINERFILE_PATH }}
-
-      - name: Push to GitHub Container Registry
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.ref_name }}
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: build-and-publish-tags
+    needs: build-and-publish
     if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     permissions:
       contents: read
@@ -240,6 +190,10 @@ jobs:
 
       - name: Setup Kubernetes
         uses: azure/setup-kubectl@v3
+
+      - name: Set Kubernetes context
+        run: |
+          kubectl config use-context ${{ env.PROD_K8S_CONTEXT }}
 
       - name: Deploy to Production
         run: |
