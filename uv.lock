@@ -83,6 +83,7 @@ source = { editable = "." }
 dependencies = [
     { name = "flask" },
     { name = "gunicorn" },
+    { name = "python-dotenv" },
 ]
 
 [package.dev-dependencies]
@@ -91,7 +92,6 @@ dev = [
     { name = "invoke" },
     { name = "pyrefly" },
     { name = "pytest" },
-    { name = "python-dotenv" },
     { name = "ruff" },
 ]
 
@@ -99,6 +99,7 @@ dev = [
 requires-dist = [
     { name = "flask", specifier = ">=3.1.2" },
     { name = "gunicorn", specifier = ">=23.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -107,7 +108,6 @@ dev = [
     { name = "invoke", specifier = ">=2.2.1" },
     { name = "pyrefly", specifier = ">=0.40.1" },
     { name = "pytest", specifier = ">=9.0.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ruff", specifier = ">=0.14.4" },
 ]
 

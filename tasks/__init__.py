@@ -2,20 +2,15 @@
 
 from invoke import Collection, Config, task
 
-from . import build, check, test
+from . import build, check, run, test
 
 config = Config(defaults={"run": {"pty": True}})
 
 ns = Collection()
 ns.add_collection(Collection.from_module(build))
 ns.add_collection(Collection.from_module(check))
+ns.add_collection(Collection.from_module(run))
 ns.add_collection(Collection.from_module(test))
-
-
-@task
-def run(ctx):
-    """Run the Flask application with gunicorn."""
-    ctx.run("uv run gunicorn --bind 0.0.0.0:8080 -w 2 helloapp.app:app")
 
 
 @task
@@ -30,6 +25,5 @@ def ci(ctx):
     test(ctx)
 
 
-ns.add_task(run)
 ns.add_task(ci)
 ns.configure(config)
