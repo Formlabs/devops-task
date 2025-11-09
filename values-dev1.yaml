@@ -1,0 +1,26 @@
+---
+replicaCount: 1
+
+image:
+  tag: latest-dev
+
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: dev-ca-issuer
+  hosts:
+    - host: dev1.helloapp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: helloapp-tls
+      hosts:
+        - dev1.helloapp.example.com
+
+env:
+  - name: APP_DEBUG
+    value: "True"

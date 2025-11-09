@@ -1,0 +1,26 @@
+---
+replicaCount: 1
+
+image:
+  tag: 24b9ab55f7d8d9706f8542d379d92363e075063f
+
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: homelab-ca-issuer
+  hosts:
+    - host: formalbs-devops.k3s.homelab.fuli
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: helloapp-tls
+      hosts:
+        - formalbs-devops.k3s.homelab.fuli
+
+env:
+  - name: APP_DEBUG
+    value: "True"

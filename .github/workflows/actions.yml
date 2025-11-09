@@ -1,8 +1,35 @@
-name: CI
+name: CI/CD
+
+# ==============================================================================
+# Workflow Variables
+# ==============================================================================
+env:
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_USERNAME: ${{ github.actor }}
+  DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}/helloapp
+  IMAGE_NAME: helloapp
+  CONTAINERFILE_PATH: ./Containerfile
+
+  HELM_CHART_PATH: chart
+
+  DEV1_VALUES_FILE: values-dev1.yaml
+  DEV1_NAMESPACE: helloapp-dev1
+  DEV1_K8S_CONTEXT: dev1-cluster
+
+  QA_VALUES_FILE: values-qa.yaml
+  QA_NAMESPACE: helloapp-qa
+  QA_K8S_CONTEXT: qa-cluster
+
+  PROD_VALUES_FILE: values-prod.yaml
+  PROD_NAMESPACE: helloapp-prod
+  PROD_K8S_CONTEXT: prod-cluster
 
 on:
   push:
     branches: ['**']
+    tags:
+      - 'v*'
 
 jobs:
   ci:
@@ -23,15 +50,19 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
       - name: Run CI checks
         run: uv run invoke ci
 
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     needs: ci
     permissions:
       contents: read
       packages: write
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout repository
@@ -40,22 +71,180 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
-      - name: Buildah Action
+      - name: Build and push container image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: helloapp
-          tags: ghcr.io/${{ github.repository }}/helloapp:${{ github.sha }}
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
           containerfiles: |
-            ./Containerfile
+            ${{ env.CONTAINERFILE_PATH }}
 
       - name: Push to GitHub Container Registry
         uses: redhat-actions/push-to-registry@v2
         with:
-          tags: ghcr.io/${{ github.repository }}/helloapp:${{ github.sha }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
+  build-and-publish-main:
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Build and push container image (main branch)
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
+            ${{ env.IMAGE_REPOSITORY }}:latest
+          containerfiles: |
+            ${{ env.CONTAINERFILE_PATH }}
+
+      - name: Push to GitHub Container Registry (main branch)
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}:${{ github.sha }}
+            ${{ env.IMAGE_REPOSITORY }}:latest
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+  deploy-dev1:
+    runs-on: ubuntu-latest
+    needs: build-and-publish
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: dev1
+      url: https://dev1.helloapp.example.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Setup Kubernetes
+        uses: azure/setup-kubectl@v3
+
+      - name: Deploy to dev1
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            -f ${{ env.DEV1_VALUES_FILE }} \
+            --set image.tag=${{ github.sha }} \
+            --namespace ${{ env.DEV1_NAMESPACE }} \
+            --create-namespace
+
+  deploy-qa:
+    runs-on: ubuntu-latest
+    needs: build-and-publish-main
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: qa
+      url: https://qa.helloapp.example.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Setup Kubernetes
+        uses: azure/setup-kubectl@v3
+
+      - name: Deploy to QA
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            -f ${{ env.QA_VALUES_FILE }} \
+            --set image.tag=${{ github.sha }} \
+            --namespace ${{ env.QA_NAMESPACE }} \
+            --create-namespace
+
+  build-and-publish-tags:
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Build and push container image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.ref_name }}
+          containerfiles: |
+            ${{ env.CONTAINERFILE_PATH }}
+
+      - name: Push to GitHub Container Registry
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ github.ref_name }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: build-and-publish-tags
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: production
+      url: https://helloapp.example.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Setup Kubernetes
+        uses: azure/setup-kubectl@v3
+
+      - name: Deploy to Production
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            -f ${{ env.PROD_VALUES_FILE }} \
+            --set image.tag=${{ github.ref_name }} \
+            --namespace ${{ env.PROD_NAMESPACE }} \
+            --create-namespace
