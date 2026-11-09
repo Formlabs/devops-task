@@ -1,5 +1,5 @@
 This repo serves as the client app example.
-The main infra/ci functionality lives in [awslab][https://github.com/veygawslab/awslab]
+The main infra/ci functionality lives in [awslab](https://github.com/veygawslab/awslab)
 
 I did not particularly keep it simple. But I definitely needed some baseline infra to get off the ground.
 
@@ -24,6 +24,14 @@ Argo/kargo: I quite like gitops in general. I believe in IaC, and gitops is an e
 I recently got introduced to kargo. This is absolutely the best way to manage promotions in argocd. Previously I was writing gitlab jobs for manually working with argo applications. Kargo is much better and more powerful, hence I chose that.
 
 Users open up pull requests which triggers build/test/etc. You can then deploy that image to a dev environment via kargo. Merges to main trigger a release and subsequent build. Users then deploy to prd via kargo as well. Releases to prd are gated by an actual git tag, which comes from merges to main. I use calver over direct semver because it's just easier and you don't have to have arguments about what "type of release" this may be. If a user doesn't particularly care about your app version (like for example a package dependency) then calver is something I prefer.
+
+Argo is hosted at [argo.veyga.click](https://argo.veyga.click)
+Kargo is hosted at [kargo.veyga.click](https://kargo.veyga.click)
+Currently only I have access to those, but read-only perms can be granted on request.
+Git interactions trigger new resource in kargo (i.e. 'Freight') and interactions
+via Kargo 'promote' freight to the appropriate env.
+
+This is a relatively straight forward Kargo setup; see the main [project](https://github.com/akuity/kargo)
 
 I also created microservice and kargo charts. These are used by client apps. I'd rather avoid devs writing helm charts themselves, and instead opting into options provided by charts. This is why the helloapp itself is pretty minimal: the ci functionality is provided elsewhere.
 
